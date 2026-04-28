@@ -1,0 +1,5 @@
+Modelo;Precision_CUB;Recall_CUB;F1_CUB;F1_macro;MCC;F1_CV_mean;F1_CV_std
+LR  — Regresión Logística;0.2131;0.4483;0.2889;0.6037;0.2377;0.2171;0.0542
+SVM — LinearSVC;0.1795;0.2414;0.2059;0.5695;0.1424;0.1703;0.0473
+RF  — Random Forest;0.4286;0.1034;0.1667;0.5655;0.1857;0.0;0.0
+GB  — Gradient Boosting;0.3077;0.1379;0.1905;0.5749;0.1699;0.0752;0.0319

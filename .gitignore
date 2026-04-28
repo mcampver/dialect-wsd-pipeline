@@ -1,0 +1,41 @@
+# Python and environments
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
+.venv/
+08_entornos_virtuales/
+
+# Notebooks checkpoints
+.ipynb_checkpoints/
+
+# Data and large files
+03_datos/
+Cartas CORESPUC/
+dataset_bio_cubanismos/
+dataset_cubanismos_hf/
+granma-txt/
+output/
+
+# Backups
+07_backups/
+
+# Models and weights
+06_aplicacion/modelo_cubanismos_final/
+*.pt
+*.bin
+*.safetensors
+*.ckpt
+
+# Project-specific OS / Editors
+.vscode/
+.DS_Store
+*.swp
+
+# Thesis docs and bibliography
+05_bibliografia/
+thesis-main/
+Título_de_la_tesis/
+
+*.zip

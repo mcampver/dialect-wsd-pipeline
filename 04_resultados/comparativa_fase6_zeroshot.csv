@@ -1,0 +1,4 @@
+Modelo;F1_CUB;F1_macro;MCC;Precision_CUB;Recall_CUB
+Qwen 3.5:2b (zero-shot, genérico);0.0;0.483;0.0;0.0;0.0
+BETO (fine-tuned, Wikipedia lat.);0.457;0.705;0.419;0.39;0.552
+CecilIA 2B (zero-shot, corpus cubano);0.1262;0.1457;0.0188;0.0677;0.931

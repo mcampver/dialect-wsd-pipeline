@@ -1,0 +1,2 @@
+Modelo;Precision_CUB;Recall_CUB;F1_CUB;F1_macro;MCC
+Qwen2.5-2B-Instruct (zero-shot, genérico);0.0;0.0;0.0;0.4817;-0.018
