@@ -327,6 +327,22 @@ def main():
         df_out[f'pred_{alias}'] = res['y_pred']
         df_out.to_csv(f"resultados_fase5_{alias}.csv", sep=';',
                       index=False, encoding='utf-8-sig')
+        # === NUEVO CÓDIGO PARA EXTRAER ERRORES Y ACIERTOS (PARA EL CAPÍTULO 7) ===
+        if alias == "BETO":
+            # 1. Falsos Positivos: El modelo dijo 1 (Cubanismo), pero era 0 (Estándar)
+            fp_df = df_out[(df_out['y_true'] == 0) & (df_out[f'pred_{alias}'] == 1)]
+            fp_df.to_csv("BETO_Falsos_Positivos.csv", sep=';', index=False, encoding='utf-8-sig')
+
+            # 2. Falsos Negativos: El modelo dijo 0 (Estándar), pero era 1 (Cubanismo)
+            fn_df = df_out[(df_out['y_true'] == 1) & (df_out[f'pred_{alias}'] == 0)]
+            fn_df.to_csv("BETO_Falsos_Negativos.csv", sep=';', index=False, encoding='utf-8-sig')
+
+            # 3. Verdaderos Positivos: El modelo dijo 1 y era 1 (Para mostrar ejemplos buenos)
+            tp_df = df_out[(df_out['y_true'] == 1) & (df_out[f'pred_{alias}'] == 1)]
+            tp_df.to_csv("BETO_Verdaderos_Positivos.csv", sep=';', index=False, encoding='utf-8-sig')
+
+            print(f"\n[EXPORT] Archivos de análisis (FP, FN, TP) guardados para la tesis.")
+        
 
     # Tabla comparativa final
     df_comp = pd.DataFrame([{k: v for k, v in r.items() if k != 'y_pred'}
@@ -344,8 +360,12 @@ def main():
         print("\n📦 Comprimiendo modelo para descarga...")
         shutil.make_archive("modelo_cubanismos", 'zip', "./modelo_cubanismos_final")
         if files:
-            print("🚀 Iniciando descarga del archivo modelo_cubanismos.zip...")
-            files.download('modelo_cubanismos.zip')
+            print("🚀 Intentando iniciar descarga automática de modelo_cubanismos.zip...")
+            try:
+                files.download('modelo_cubanismos.zip')
+            except AttributeError:
+                print("⚠️ La descarga automática falló (normal al ejecutar con !python).")
+                print("👉 Por favor, descarga 'modelo_cubanismos.zip' manualmente desde el panel de Archivos (icono de carpeta a la izquierda).")
         else:
             print("💾 El modelo está listo en: modelo_cubanismos.zip")
 

@@ -10,8 +10,18 @@ import pandas as pd
 import sqlite3
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-# Configuración de rutas
+# Añadimos un pequeño utilitario offline para evitar instalar modelos de HF solo para el sentimiento
+import sys
 BASE_APP_DIR = os.path.dirname(__file__)
+WEBAPP_DIR = os.path.join(BASE_APP_DIR, "..", "09_webapp")
+sys.path.append(os.path.abspath(WEBAPP_DIR))
+try:
+    from utils_nlp import analizar_sentimiento_basico
+except ImportError:
+    # Fallback por si ejecutas el script fuera de su contexto
+    analizar_sentimiento_basico = lambda x: "Neutro"
+
+# Configuración de rutas
 MODEL_PATH = os.path.join(BASE_APP_DIR, "modelo_cubanismos_final")
 DB_PATH = os.path.join(BASE_APP_DIR, "..", "03_datos", "diccionario_cubanismos.db")
 
@@ -33,20 +43,39 @@ class DetectorCubano:
         self.model.eval()
 
         # 3. Cargar Diccionario de Candidatos (De la Base de Datos)
-        self.candidatos = set()
+        self.candidatos_traduccion = {}
         if os.path.exists(DB_PATH):
             try:
                 conn = sqlite3.connect(DB_PATH)
-                # IMPORTANTE: La columna se llama 'lema' en tu DB
-                df_cubs = pd.read_sql_query("SELECT DISTINCT lema FROM cubanismos", conn)
-                self.candidatos = set(df_cubs['lema'].str.lower().unique())
+                # Intentamos extraer también la traducción, si no existe la columna omitiremos
+                try:
+                    df_cubs = pd.read_sql_query("SELECT lema, traduccion FROM cubanismos", conn)
+                    for index, row in df_cubs.iterrows():
+                        lema = row['lema'].lower().strip()
+                        trad = row['traduccion']
+                        if pd.isna(trad): trad = "Sin equivalente registrado"
+                        self.candidatos_traduccion[lema] = trad
+                except sqlite3.OperationalError:
+                    # Si no existe la columna 'traduccion', hacemos fallback a listado simple
+                    df_cubs = pd.read_sql_query("SELECT DISTINCT lema FROM cubanismos", conn)
+                    for l in df_cubs['lema'].unique():
+                        self.candidatos_traduccion[l.lower()] = "Sin traducción"
+                
                 conn.close()
-                print(f"Diccionario cargado: {len(self.candidatos)} términos cubanos reconocidos.")
+                print(f"Diccionario cargado: {len(self.candidatos_traduccion)} términos cubanos reconocidos.")
             except Exception as e:
                 print(f"Error cargando DB, usando lista de respaldo. ({e})")
         
-        # Lista de respaldo con términos clave
-        self.candidatos.update(["asere", "guagua", "maquina", "bola", "pinchar", "finca", "ómnibus", "asere", "que bola", "acere"])
+        # Diccionario de respaldo offline
+        respaldo = {
+            "asere": "amigo/socio", "acere": "amigo/socio", 
+            "guagua": "autobús", "máquina": "automóvil antiguo", "maquina": "automóvil antiguo",
+            "bola": "rumor", "pinchar": "trabajar", "finca": "prisión",
+            "ómnibus": "autobús", "que bola": "hola / qué tal"
+        }
+        for k, v in respaldo.items():
+            if k not in self.candidatos_traduccion:
+                self.candidatos_traduccion[k] = v
 
     def analizar_frase(self, texto):
         doc = self.nlp(texto)
@@ -62,7 +91,11 @@ class DetectorCubano:
             palabra_original = token.text
 
             # PASO 1: ¿La RAÍZ de esta palabra es un posible cubanismo?
-            if lema_lower in self.candidatos or palabra_original.lower() in self.candidatos:
+            traduccion_estandar = self.candidatos_traduccion.get(lema_lower, "Desconocido")
+            if traduccion_estandar == "Desconocido" and palabra_original.lower() in self.candidatos_traduccion:
+                traduccion_estandar = self.candidatos_traduccion.get(palabra_original.lower())
+
+            if traduccion_estandar != "Desconocido":
                 
                 # PASO 2: Preguntar a BETO (IA) si en ESTA FRASE es cubanismo
                 inputs = self.tokenizer(
@@ -81,12 +114,16 @@ class DetectorCubano:
                 
                 # Umbral de decisión
                 if prob_cub > 0.35: # Bajamos un poco más para ser más sensibles
+                    sentimiento = analizar_sentimiento_basico(texto_limpio)
+                    
                     hallasgo = {
                         "palabra": palabra_original,
-                        "confianza": f"{prob_cub*100:.1f}%",
+                        "confianza": round(prob_cub * 100, 1),
                         "pos": token.pos_,
                         "dep": token.dep_,
-                        "lema": token.lemma_
+                        "lema": token.lemma_,
+                        "equivalente": traduccion_estandar,
+                        "sentimiento": sentimiento
                     }
                     hallazgos.append(hallasgo)
 
@@ -99,6 +136,8 @@ class DetectorCubano:
                 print(f"   - Función: {h['pos']} / {h['dep']}")
                 print(f"   - Raíz: {h['lema']}")
                 print("-" * 30)
+                
+        return hallazgos
 
 def main():
     try:
