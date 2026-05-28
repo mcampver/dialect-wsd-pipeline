@@ -39,3 +39,6 @@ thesis-main/
 Título_de_la_tesis/
 
 *.zip
+
+# Graphify output
+graphify-out/

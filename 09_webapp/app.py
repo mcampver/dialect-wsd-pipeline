@@ -16,49 +16,119 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "0
 from clasificador_final import DetectorCubano
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
-st.set_page_config(page_title="Detector de Cubanismos", page_icon="🇨🇺", layout="wide")
+st.set_page_config(page_title="Detector  de Cubanismos", page_icon="🇨🇺", layout="wide")
+
 
 # --- ESTILOS CSS PERSONALIZADOS ---
 st.markdown("""
     <style>
-    .main {background-color: #f8f9fa;}
+    /* Fondo general blanco y texto oscuro de alto contraste */
+    .main, [data-testid="stAppViewContainer"] {
+        background-color: #FFFFFF;
+        color: #1A202C;
+    }
+    [data-testid="stSidebar"] {
+        background-color: #F0F4F8;
+        border-right: 2px solid #CBD5E0;
+    }
+
+    /* Tipografía más grande para facilitar la lectura */
+    body, p, div, span, label {
+        font-size: 16px !important;
+        line-height: 1.6 !important;
+    }
+    h1 { font-size: 2rem !important; color: #1A56A0 !important; }
+    h2, h3 { font-size: 1.4rem !important; color: #1A202C !important; }
+
+    /* KPI Cards — fondo blanco con borde azul, texto oscuro legible */
+    div[data-testid="metric-container"] {
+        background-color: #FFFFFF;
+        border: 2px solid #1A56A0;
+        padding: 5% 5% 5% 10%;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(26, 86, 160, 0.12);
+    }
+    div[data-testid="metric-container"] > label {
+        color: #2D3748 !important;
+        font-weight: 700;
+        font-size: 14px !important;
+    }
+    div[data-testid="metric-container"] [data-testid="stMetricValue"] {
+        color: #1A56A0 !important;
+        font-size: 1.8rem !important;
+        font-weight: 800;
+    }
+
+    /* Botones primarios con buen contraste */
+    .stButton > button[kind="primary"] {
+        background-color: #1A56A0;
+        color: #FFFFFF;
+        font-size: 16px !important;
+        font-weight: 700;
+        border-radius: 8px;
+        padding: 0.5rem 1.5rem;
+        border: none;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background-color: #12407A;
+    }
+
+    /* Inputs y text areas con borde visible */
+    .stTextArea textarea, .stTextInput input {
+        border: 2px solid #CBD5E0 !important;
+        border-radius: 6px !important;
+        font-size: 16px !important;
+        color: #1A202C !important;
+        background-color: #FFFFFF !important;
+    }
+    .stTextArea textarea:focus, .stTextInput input:focus {
+        border-color: #1A56A0 !important;
+        box-shadow: 0 0 0 2px rgba(26, 86, 160, 0.2) !important;
+    }
+
+    /* Tabs con contraste claro */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #F0F4F8;
+        border-radius: 8px;
+        padding: 4px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        color: #2D3748 !important;
+        font-weight: 600;
+        font-size: 15px !important;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #1A56A0 !important;
+        color: #FFFFFF !important;
+        border-radius: 6px;
+    }
+
+    /* Tooltip accesible */
     .tooltip {
         position: relative;
         display: inline-block;
-        border-bottom: 1px dotted black;
+        border-bottom: 2px dotted #1A56A0;
     }
     .tooltip .tooltiptext {
         visibility: hidden;
-        width: 120px;
-        background-color: #555;
-        color: #fff;
+        width: 140px;
+        background-color: #1A202C;
+        color: #FFFFFF;
         text-align: center;
         border-radius: 6px;
-        padding: 5px 0;
+        padding: 6px;
         position: absolute;
         z-index: 1;
         bottom: 125%;
         left: 50%;
-        margin-left: -60px;
+        margin-left: -70px;
         opacity: 0;
         transition: opacity 0.3s;
+        font-size: 14px !important;
     }
     .tooltip:hover .tooltiptext {
         visibility: visible;
         opacity: 1;
-    }
-    
-    /* KPI Cards */
-    div[data-testid="metric-container"] {
-        background-color: #1E293B; /* Fondo azul oscuro/gris para modo oscuro */
-        border: 1px solid #334155;
-        padding: 5% 5% 5% 10%;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    div[data-testid="metric-container"] > label {
-        color: #94A3B8 !important; /* Letra más sutil para el título de la métrica */
-        font-weight: 600;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -217,11 +287,14 @@ elif opcion == "📚 Laboratorio Batch (Múltiples Archivos)":
                 top_10.columns = ['Cubanismo', 'Frecuencia']
                 fig_bar = px.bar(top_10, x='Cubanismo', y='Frecuencia', color='Frecuencia', color_continuous_scale="Blues")
                 fig_bar.update_layout(
-                    plot_bgcolor="rgba(0,0,0,0)", 
-                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="#FFFFFF",
+                    paper_bgcolor="#FFFFFF",
+                    font=dict(color="#1A202C", size=13),
                     margin=dict(l=20, r=20, t=30, b=20),
-                    xaxis_title="", 
-                    yaxis_title="Ocurrencias"
+                    xaxis_title="",
+                    yaxis_title="Ocurrencias",
+                    xaxis=dict(tickfont=dict(color="#1A202C")),
+                    yaxis=dict(tickfont=dict(color="#1A202C"), gridcolor="#E2E8F0"),
                 )
                 st.plotly_chart(fig_bar, use_container_width=True)
                 
@@ -234,9 +307,11 @@ elif opcion == "📚 Laboratorio Batch (Múltiples Archivos)":
                     color_map = {"Positivo": "#4A90E2", "Neutro": "#8795A1", "Negativo": "#2C3E50"}
                     fig_pie = px.pie(sent_counts, values='Cantidad', names='Contexto Emocional', color='Contexto Emocional', color_discrete_map=color_map, hole=0.5)
                     fig_pie.update_layout(
-                        plot_bgcolor="rgba(0,0,0,0)",
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        margin=dict(l=20, r=20, t=30, b=20)
+                        plot_bgcolor="#FFFFFF",
+                        paper_bgcolor="#FFFFFF",
+                        font=dict(color="#1A202C", size=13),
+                        margin=dict(l=20, r=20, t=30, b=20),
+                        legend=dict(font=dict(color="#1A202C")),
                     )
                     st.plotly_chart(fig_pie, use_container_width=True)
             
