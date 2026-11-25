@@ -1,30 +1,56 @@
-import pdfplumber
-import docx
 import io
 
+import docx
+import pdfplumber
+
+EXTENSIONES_SOPORTADAS = ("txt", "pdf", "docx")
+
+
+class FileParseError(Exception):
+    """El archivo no se pudo convertir en texto analizable."""
+
+
+def _decodificar_txt(datos):
+    # utf-8-sig quita el BOM que añade el Bloc de notas; cp1252 cubre los .txt
+    # guardados como "ANSI" en Windows (latin-1 nunca falla: último recurso).
+    for codificacion in ("utf-8-sig", "cp1252", "latin-1"):
+        try:
+            return datos.decode(codificacion)
+        except UnicodeDecodeError:
+            continue
+    raise FileParseError("codificación de texto no reconocida")  # inalcanzable con latin-1
+
+
 def extract_text_from_file(uploaded_file):
+    """Extrae el texto de un .txt, .pdf o .docx subido con Streamlit.
+
+    Lanza FileParseError si el formato no es soportado, el archivo está dañado
+    o no contiene texto extraíble (p. ej. un PDF escaneado sin OCR). Antes se
+    devolvía el mensaje de error como si fuera el texto, y ese mensaje acababa
+    analizado y contado como palabras del corpus.
     """
-    Extrae texto de archivos TXT, PDF o DOCX subidos vía Streamlit.
-    """
-    file_name = uploaded_file.name
-    file_ext = file_name.split('.')[-1].lower()
-    
-    texto = ""
+    nombre = uploaded_file.name
+    ext = nombre.rsplit(".", 1)[-1].lower() if "." in nombre else ""
+    if ext not in EXTENSIONES_SOPORTADAS:
+        raise FileParseError(f"formato no soportado ({ext or 'sin extensión'})")
+
+    datos = uploaded_file.getvalue()
     try:
-        if file_ext == "txt":
-            texto = uploaded_file.getvalue().decode("utf-8")
-        elif file_ext == "pdf":
-            with pdfplumber.open(uploaded_file) as pdf:
-                paginas = [page.extract_text() for page in pdf.pages if page.extract_text() is not None]
-                texto = "\n".join(paginas)
-        elif file_ext in ["doc", "docx"]:
-            # Usar io.BytesIO para leer el buffer
-            doc = docx.Document(io.BytesIO(uploaded_file.getvalue()))
-            texto = "\n".join([para.text for para in doc.paragraphs])
-        else:
-            texto = f"Formato no soportado: {file_ext}"
-            
+        if ext == "txt":
+            texto = _decodificar_txt(datos)
+        elif ext == "pdf":
+            with pdfplumber.open(io.BytesIO(datos)) as pdf:
+                paginas = [p.extract_text() for p in pdf.pages]
+            texto = "\n".join(p for p in paginas if p)
+        else:  # docx
+            documento = docx.Document(io.BytesIO(datos))
+            texto = "\n".join(p.text for p in documento.paragraphs)
+    except FileParseError:
+        raise
     except Exception as e:
-        texto = f"[Error al procesar el archivo {file_name}: {str(e)}]"
-        
+        raise FileParseError(f"archivo dañado o ilegible: {e}") from e
+
+    if not texto.strip():
+        pista = " (¿PDF escaneado sin OCR?)" if ext == "pdf" else ""
+        raise FileParseError(f"no contiene texto extraíble{pista}")
     return texto
